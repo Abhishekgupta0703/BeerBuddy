@@ -13,7 +13,8 @@ export default function Index() {
       if (token) {
         router.replace('/(user)');
       } else {
-        setLoading(false);
+        // Show welcome screen first
+        router.replace('/welcome');
       }
     };
     checkLogin();

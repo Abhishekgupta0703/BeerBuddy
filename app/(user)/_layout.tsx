@@ -86,6 +86,12 @@ export default function UserLayout() {
           href: null
         }}
       />
+      <Tabs.Screen
+        name="profile/help"
+        options={{
+          href: null
+        }}
+      />
     </Tabs>
   );
 }

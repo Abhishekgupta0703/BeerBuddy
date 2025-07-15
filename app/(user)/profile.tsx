@@ -1,11 +1,57 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useUserStore } from "@/store/useUserStore";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useCartStore } from "@/store/useCartStore";
+import Toast from "react-native-toast-message";
 
 export default function ProfileScreen() {
-  const { user } = useUserStore();
+  const { user, clearUser } = useUserStore();
+  const { clearCart } = useCartStore();
   const router = useRouter();
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Clear user data
+              clearUser();
+              // Clear cart data
+              clearCart();
+              // Remove token from storage
+              await AsyncStorage.removeItem("token");
+              
+              Toast.show({
+                type: "success",
+                text1: "Logged out successfully",
+                text2: "See you next time!"
+              });
+              
+              // Navigate back to welcome screen
+              router.replace("/welcome");
+            } catch (error) {
+              Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: "Failed to logout. Please try again."
+              });
+            }
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -58,7 +104,7 @@ export default function ProfileScreen() {
         ))}
       </View>
 
-      <TouchableOpacity style={styles.logoutButton}>
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
     </View>

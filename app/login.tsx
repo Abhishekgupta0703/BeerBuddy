@@ -3,18 +3,55 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet
+  StyleSheet,
+  Animated,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+
+const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const otpSlideAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Entrance animation
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const handleSendOTP = () => {
     if (phone.length !== 10) {
@@ -22,99 +59,257 @@ export default function LoginScreen() {
       return;
     }
 
-    // Simulate sending OTP
-    Toast.show({ type: "success", text1: "OTP sent to your number" });
-    setOtpSent(true);
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      Toast.show({ type: "success", text1: "OTP sent to your number" });
+      setOtpSent(true);
+      
+      // Animate OTP input appearance
+      Animated.spring(otpSlideAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+    }, 1500);
   };
 
   const handleVerifyOTP = async () => {
     if (otp === "1234") {
+      setLoading(true);
       await AsyncStorage.setItem("token", "dummy_token");
       Toast.show({ type: "success", text1: "Logged in successfully" });
-      const isExistingUser = phone === "9999999999"; // you can change condition
-
-      if (isExistingUser) {
-        await AsyncStorage.setItem("token", "dummy_token");
-        router.replace("/(user)");
-      } else {
-        await AsyncStorage.setItem("token", "dummy_token");
-        router.replace("/age-verification");
-      }
+      
+      setTimeout(() => {
+        const isExistingUser = phone === "9999999999";
+        if (isExistingUser) {
+          router.replace("/location-permission");
+        } else {
+          router.replace("/age-verification");
+        }
+      }, 1000);
     } else {
       Toast.show({ type: "error", text1: "Invalid OTP" });
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>🔐 Login to BrewDash</Text>
+    <LinearGradient
+      colors={['#FFF7ED', '#FEF3C7', '#FBBF24']}
+      style={styles.container}
+    >
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <Animated.View
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [
+                { translateY: slideAnim },
+                { scale: scaleAnim }
+              ],
+            },
+          ]}
+        >
+          <View style={styles.logoContainer}>
+            <Text style={styles.logo}>🔐</Text>
+            <Text style={styles.title}>Welcome to BrewDash</Text>
+            <Text style={styles.subtitle}>Enter your phone number to continue</Text>
+          </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Enter Mobile Number"
-        keyboardType="phone-pad"
-        value={phone}
-        onChangeText={setPhone}
-        maxLength={10}
-      />
+          <View style={styles.inputContainer}>
+            <Ionicons name="phone-portrait" size={20} color="#78350F" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Enter Mobile Number"
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+              maxLength={10}
+              placeholderTextColor="#B45309"
+            />
+          </View>
 
-      {otpSent && (
-        <TextInput
-          style={styles.input}
-          placeholder="Enter OTP"
-          keyboardType="numeric"
-          value={otp}
-          onChangeText={setOtp}
-          maxLength={4}
-        />
-      )}
+          {otpSent && (
+            <Animated.View
+              style={[
+                styles.inputContainer,
+                {
+                  opacity: otpSlideAnim,
+                  transform: [{ translateY: Animated.multiply(otpSlideAnim, -10) }],
+                },
+              ]}
+            >
+              <Ionicons name="key" size={20} color="#78350F" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter OTP"
+                keyboardType="numeric"
+                value={otp}
+                onChangeText={setOtp}
+                maxLength={4}
+                placeholderTextColor="#B45309"
+              />
+            </Animated.View>
+          )}
 
-      {!otpSent ? (
-        <TouchableOpacity style={styles.button} onPress={handleSendOTP}>
-          <Text style={styles.buttonText}>Send OTP</Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity style={styles.button} onPress={handleVerifyOTP}>
-          <Text style={styles.buttonText}>Verify & Login</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+          <TouchableOpacity 
+            style={[styles.button, loading && styles.buttonDisabled]} 
+            onPress={!otpSent ? handleSendOTP : handleVerifyOTP}
+            disabled={loading}
+          >
+            {loading ? (
+              <Animated.View style={styles.loadingContainer}>
+                <Text style={styles.buttonText}>Processing...</Text>
+              </Animated.View>
+            ) : (
+              <Text style={styles.buttonText}>
+                {!otpSent ? "Send OTP" : "Verify & Login"}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {otpSent && (
+            <TouchableOpacity 
+              style={styles.resendButton} 
+              onPress={() => {
+                setOtpSent(false);
+                setOtp("");
+                Animated.spring(otpSlideAnim, {
+                  toValue: 0,
+                  tension: 50,
+                  friction: 8,
+                  useNativeDriver: true,
+                }).start();
+              }}
+            >
+              <Text style={styles.resendText}>Resend OTP</Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>By continuing, you agree to our</Text>
+            <TouchableOpacity>
+              <Text style={styles.linkText}>Terms & Conditions</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
-    paddingTop: 80,
     flex: 1,
-    backgroundColor: "#fff"
+  },
+  keyboardView: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  content: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logo: {
+    fontSize: 48,
+    marginBottom: 16,
   },
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#78350f",
-    marginBottom: 40,
-    textAlign: "center"
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#78350F',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#B45309',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: '#FED7AA',
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    backgroundColor: "#fef3c7",
-    borderColor: "#f59e0b",
-    borderWidth: 1,
-    padding: 14,
-    borderRadius: 8,
-    marginBottom: 16,
-    fontSize: 16
+    flex: 1,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: '#78350F',
+    fontWeight: '500',
   },
   button: {
-    backgroundColor: "#f59e0b",
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8
+    backgroundColor: '#F59E0B',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 16,
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  buttonDisabled: {
+    backgroundColor: '#FED7AA',
+    shadowOpacity: 0.1,
   },
   buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16
-  }
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 18,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  resendButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginTop: 16,
+  },
+  resendText: {
+    color: '#F59E0B',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  footer: {
+    alignItems: 'center',
+    marginTop: 32,
+  },
+  footerText: {
+    color: '#B45309',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  linkText: {
+    color: '#F59E0B',
+    fontSize: 14,
+    fontWeight: '600',
+  },
 });

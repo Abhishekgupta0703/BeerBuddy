@@ -1,62 +1,277 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Beer } from '../data/beers';
 
-export default function BeerCard({ beer, onAdd }: any) {
+interface BeerCardProps {
+  beer: Beer;
+  onAdd: () => void;
+}
+
+export default function BeerCard({ beer, onAdd }: BeerCardProps) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const addButtonScale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleAddPress = () => {
+    Animated.sequence([
+      Animated.timing(addButtonScale, {
+        toValue: 1.2,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(addButtonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    onAdd();
+  };
+
+  const renderStars = (rating: number) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(<Ionicons key={i} name="star" size={12} color="#F59E0B" />);
+    }
+    
+    if (hasHalfStar) {
+      stars.push(<Ionicons key="half" name="star-half" size={12} color="#F59E0B" />);
+    }
+    
+    const emptyStars = 5 - Math.ceil(rating);
+    for (let i = 0; i < emptyStars; i++) {
+      stars.push(<Ionicons key={`empty-${i}`} name="star-outline" size={12} color="#D1D5DB" />);
+    }
+    
+    return stars;
+  };
+
   return (
-    <View style={styles.card} >
-      <View style={styles.imageBox}>
-        <Ionicons name="image-outline" size={48} color="#e5e7eb" />
-      </View>
-      <Text style={styles.beerName}>{beer.name}</Text>
-      <View style={styles.priceRow}>
-        <Text style={styles.price}>₹{beer.price}</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={onAdd}>
-          <Text style={styles.addBtnText}>+</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    <Animated.View 
+      style={[
+        styles.card,
+        {
+          transform: [{ scale: scaleAnim }],
+        },
+      ]}
+    >
+      <TouchableOpacity
+        activeOpacity={1}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={styles.cardContent}
+      >
+        {/* Discount Badge */}
+        {beer.discount && (
+          <View style={styles.discountBadge}>
+            <Text style={styles.discountText}>{beer.discount}% OFF</Text>
+          </View>
+        )}
+
+        {/* Stock Status */}
+        {!beer.inStock && (
+          <View style={styles.outOfStockBadge}>
+            <Text style={styles.outOfStockText}>Out of Stock</Text>
+          </View>
+        )}
+
+        {/* Beer Image */}
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: beer.image }}
+            style={styles.beerImage}
+            resizeMode="cover"
+          />
+        </View>
+
+        {/* Beer Info */}
+        <View style={styles.infoContainer}>
+          <Text style={styles.brandText}>{beer.brand}</Text>
+          <Text style={styles.beerName} numberOfLines={1}>{beer.name}</Text>
+          <Text style={styles.volumeText}>{beer.volume} • {beer.alcohol}</Text>
+          
+          {/* Rating */}
+          <View style={styles.ratingContainer}>
+            <View style={styles.starsContainer}>
+              {renderStars(beer.rating)}
+            </View>
+            <Text style={styles.ratingText}>({beer.reviews})</Text>
+          </View>
+
+          {/* Price Section */}
+          <View style={styles.priceContainer}>
+            <View style={styles.priceRow}>
+              <Text style={styles.price}>₹{beer.price}</Text>
+              {beer.originalPrice && (
+                <Text style={styles.originalPrice}>₹{beer.originalPrice}</Text>
+              )}
+            </View>
+            
+            <Animated.View style={{ transform: [{ scale: addButtonScale }] }}>
+              <TouchableOpacity 
+                style={[
+                  styles.addBtn,
+                  !beer.inStock && styles.addBtnDisabled
+                ]} 
+                onPress={handleAddPress}
+                disabled={!beer.inStock}
+              >
+                <Ionicons 
+                  name="add" 
+                  size={18} 
+                  color={beer.inStock ? "#FFFFFF" : "#9CA3AF"} 
+                />
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-    padding: 12,
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 0,
+    margin: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  imageBox: {
-    height: 100,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
+  cardContent: {
+    padding: 12,
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 10,
+  },
+  discountText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  outOfStockBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#6B7280',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 10,
+  },
+  outOfStockText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  imageContainer: {
+    height: 120,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  beerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  infoContainer: {
+    flex: 1,
+  },
+  brandText: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '500',
+    marginBottom: 2,
   },
   beerName: {
+    fontSize: 14,
     fontWeight: '600',
-    fontSize: 15,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  volumeText: {
+    fontSize: 11,
+    color: '#9CA3AF',
     marginBottom: 6,
   },
-  priceRow: {
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    marginRight: 4,
+  },
+  ratingText: {
+    fontSize: 10,
+    color: '#6B7280',
+  },
+  priceContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   price: {
-    fontSize: 15,
-    color: '#b45309',
-    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#F59E0B',
+    fontWeight: '700',
+  },
+  originalPrice: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+    marginLeft: 4,
   },
   addBtn: {
-    backgroundColor: '#f59e0b',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: '#F59E0B',
+    borderRadius: 8,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  addBtnText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+  addBtnDisabled: {
+    backgroundColor: '#E5E7EB',
+    shadowOpacity: 0,
+    elevation: 0,
   },
 });
