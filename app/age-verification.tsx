@@ -35,7 +35,7 @@ export default function AgeVerificationScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Age Verification</Text>
-      <Text style={styles.desc}>Please upload a valid ID to verify you're 21+</Text>
+      <Text style={styles.desc}>Please upload a valid ID to verify you&apos;re 21+</Text>
 
       <TouchableOpacity style={styles.uploadBox} onPress={pickImage}>
         {image ? (

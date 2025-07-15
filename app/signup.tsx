@@ -3,8 +3,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Alert
+  StyleSheet
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";

@@ -31,16 +31,16 @@ export default function ProfileScreen() {
         {[
           {
             label: "Manage Addresses",
-            icon: "location-outline",
-            route: "/(user)/profile/addresses"
+            icon: "location-outline" as const,
+            route: "/(user)/profile/addresses" as const
           },
-          { label: "Payment Methods", icon: "card-outline", route: null },
+          { label: "Payment Methods", icon: "card-outline" as const, route: null },
           {
             label: "Notifications",
-            icon: "notifications-outline",
+            icon: "notifications-outline" as const,
             route: null
           },
-          { label: "Help & Support", icon: "help-circle-outline", route: "/(user)/profile/help" }
+          { label: "Help & Support", icon: "help-circle-outline" as const, route: "/(user)/profile/help" as const }
         ].map((item, idx) => (
           <TouchableOpacity
             key={idx}

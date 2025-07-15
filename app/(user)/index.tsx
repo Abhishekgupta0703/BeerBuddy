@@ -4,8 +4,7 @@ import {
   StyleSheet,
   FlatList,
   TextInput,
-  TouchableOpacity,
-  Image
+  TouchableOpacity
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useNavigation } from "expo-router";
@@ -94,7 +93,7 @@ export default function HomeScreen() {
     navigation.setOptions({
       headerShown: false
     });
-  }, []);
+  }, [navigation]);
 
   const filtered = beers.filter((b) => {
     const matchesCategory = selected === "All" || b.type === selected;

@@ -3,8 +3,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
-  Alert
+  TouchableOpacity
 } from "react-native";
 import { useCartStore } from "../../store/useCartStore";
 import { useRouter } from "expo-router";
@@ -12,7 +11,6 @@ import Toast from "react-native-toast-message";
 
 export default function CheckoutScreen() {
   const cartItems = useCartStore((state) => state.items);
-  const clearCart = useCartStore((state) => state.clearCart);
   const router = useRouter();
 
   const total = cartItems.reduce(

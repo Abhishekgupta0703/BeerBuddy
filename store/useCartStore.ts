@@ -20,8 +20,10 @@ type CartStore = {
   orders: Order[]; // NEW
   addToCart: (item: CartItem) => void;
   removeFromCart: (id: string) => void;
+  removeOneFromCart: (id: string) => void;
   clearCart: () => void;
   placeOrder: () => void; // NEW
+  updateOrderStatus: (id: string, status: 'Pending' | 'Delivered') => void;
 };
 
 
@@ -45,6 +47,16 @@ export const useCartStore = create<CartStore>((set, get) => ({
 
   removeFromCart: (id) => {
     set({ items: get().items.filter((item) => item.id !== id) });
+  },
+
+  removeOneFromCart: (id) => {
+    set({
+      items: get().items.map((item) =>
+        item.id === id && item.quantity > 1
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
+      ).filter((item) => item.quantity > 0),
+    });
   },
 
   clearCart: () => {

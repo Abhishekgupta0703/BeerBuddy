@@ -17,7 +17,7 @@ export default function ProductDetail() {
     name: name as string,
     price: Number(price),
     type: type as string,
-    image: image || "https://via.placeholder.com/180",
+    image: (Array.isArray(image) ? image[0] : image) || "https://via.placeholder.com/180",
     description: (description as string) || "No description available"
   };
   if (!beer) return <Text>Beer not found.</Text>;

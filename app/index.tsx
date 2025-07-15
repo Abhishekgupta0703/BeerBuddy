@@ -17,7 +17,7 @@ export default function Index() {
       }
     };
     checkLogin();
-  }, []);
+  }, [router]);
 
   if (loading) {
     return (
@@ -50,6 +50,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   iconWrapper: {
     backgroundColor: '#f59e0b',
