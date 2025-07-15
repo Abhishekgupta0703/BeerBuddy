@@ -1,0 +1,45 @@
+BEER/
+├── app/
+│   ├── (user)/              # User-side screens
+│   │   ├── index.tsx        # Home page
+│   │   ├── product/[id].tsx # Beer detail
+│   │   ├── cart.tsx
+│   │   ├── checkout.tsx
+│   │   ├── orders.tsx
+│   │   └── profile.tsx
+│   ├── (delivery)/          # Delivery boy screens
+│   │   ├── index.tsx        # Assigned deliveries
+│   │   ├── delivery/[id].tsx
+│   │   └── profile.tsx
+│   ├── login.tsx
+│   ├── signup.tsx
+│   ├── verify-age.tsx
+│   └── _layout.tsx          # App layout (tabs/stack)
+│
+├── components/              # Reusable UI components
+│   ├── Header.tsx
+│   ├── ProductCard.tsx
+│   ├── DeliveryCard.tsx
+│   └── Button.tsx
+│
+├── constants/               # Color themes, font sizes, etc.
+│   └── index.ts
+│
+├── hooks/                   # Custom React hooks
+│   └── useAuth.ts
+│
+├── lib/                     # API functions, helpers
+│   ├── api.ts               # API base setup (Axios instance)
+│   ├── user.ts              # User API calls
+│   └── delivery.ts          # Delivery API calls
+│
+├── assets/
+│   ├── fonts/
+│   └── images/
+│
+├── .vscode/
+├── .expo/
+├── app.json
+├── package.json
+├── tsconfig.json
+└── README.md
