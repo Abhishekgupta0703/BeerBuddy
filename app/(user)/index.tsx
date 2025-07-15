@@ -35,6 +35,7 @@ export default function HomeScreen() {
   
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerOpacity = useRef(new Animated.Value(0)).current;
+  const categoryFlatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
     const timeout = setTimeout(() => setLoading(false), 1000);
@@ -150,6 +151,7 @@ export default function HomeScreen() {
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>Categories</Text>
         <FlatList
+          ref={categoryFlatListRef}
           data={categories}
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -160,9 +162,25 @@ export default function HomeScreen() {
               label={item.name}
               icon={item.icon}
               selected={selected === item.id}
-              onPress={() => setSelected(item.id)}
+              onPress={() => {
+                setSelected(item.id);
+                // Scroll to the selected category
+                const selectedIndex = categories.findIndex(cat => cat.id === item.id);
+                if (selectedIndex !== -1 && categoryFlatListRef.current) {
+                  categoryFlatListRef.current.scrollToIndex({
+                    index: selectedIndex,
+                    animated: true,
+                    viewPosition: 0.5, // Center the item
+                  });
+                }
+              }}
             />
           )}
+          getItemLayout={(data, index) => ({
+            length: 100, // Approximate width of each FilterTag
+            offset: 100 * index,
+            index,
+          })}
         />
       </View>
 
