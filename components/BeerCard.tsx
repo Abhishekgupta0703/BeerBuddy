@@ -6,9 +6,10 @@ import { Beer } from '../data/beers';
 interface BeerCardProps {
   beer: Beer;
   onAdd: () => void;
+  onPress?: () => void;
 }
 
-export default function BeerCard({ beer, onAdd }: BeerCardProps) {
+export default function BeerCard({ beer, onAdd, onPress }: BeerCardProps) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const addButtonScale = useRef(new Animated.Value(1)).current;
 
@@ -73,9 +74,10 @@ export default function BeerCard({ beer, onAdd }: BeerCardProps) {
       ]}
     >
       <TouchableOpacity
-        activeOpacity={1}
+        activeOpacity={0.8}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        onPress={onPress}
         style={styles.cardContent}
       >
         {/* Discount Badge */}
@@ -91,6 +93,25 @@ export default function BeerCard({ beer, onAdd }: BeerCardProps) {
             <Text style={styles.outOfStockText}>Out of Stock</Text>
           </View>
         )}
+
+        {/* Product Tags */}
+        <View style={styles.tagsContainer}>
+          {beer.popular && (
+            <View style={styles.tag}>
+              <Text style={styles.tagText}>Bestseller</Text>
+            </View>
+          )}
+          {beer.tags?.includes('new') && (
+            <View style={[styles.tag, styles.newTag]}>
+              <Text style={styles.tagText}>New</Text>
+            </View>
+          )}
+          {beer.tags?.includes('craft') && (
+            <View style={[styles.tag, styles.craftTag]}>
+              <Text style={styles.tagText}>Craft</Text>
+            </View>
+          )}
+        </View>
 
         {/* Beer Image */}
         <View style={styles.imageContainer}>
@@ -130,7 +151,10 @@ export default function BeerCard({ beer, onAdd }: BeerCardProps) {
                   styles.addBtn,
                   !beer.inStock && styles.addBtnDisabled
                 ]} 
-                onPress={handleAddPress}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleAddPress();
+                }}
                 disabled={!beer.inStock}
               >
                 <Ionicons 
@@ -267,5 +291,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
     boxShadow: 'none',
     elevation: 0,
+  },
+  tagsContainer: {
+    position: 'absolute',
+    top: 40,
+    left: 8,
+    right: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    zIndex: 5,
+  },
+  tag: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+  },
+  newTag: {
+    backgroundColor: '#10B981',
+  },
+  craftTag: {
+    backgroundColor: '#8B5CF6',
+  },
+  tagText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '600',
   },
 });

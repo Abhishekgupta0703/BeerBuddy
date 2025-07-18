@@ -3,10 +3,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
+import { useUserStore } from '../store/useUserStore';
 
 export default function AgeVerificationScreen() {
   const [image, setImage] = useState<string | null>(null);
   const router = useRouter();
+  const { setAgeVerified } = useUserStore();
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -28,8 +30,9 @@ export default function AgeVerificationScreen() {
     }
 
     // Simulate upload + verification
-    Toast.show({ type: 'success', text1: 'Verification submitted' });
-    router.replace('/(user)');
+    setAgeVerified(true);
+    Toast.show({ type: 'success', text1: 'Age verification successful' });
+    router.replace('/location-permission');
   };
 
   return (

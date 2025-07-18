@@ -41,17 +41,17 @@ export default function UserLayout() {
         }}
       />
       <Tabs.Screen
-        name="notifications"
+        name="cart"
         options={{
-          tabBarLabel: "Alerts",
+          tabBarLabel: "Cart",
           tabBarIcon: ({ color }) => (
-            <Ionicons name="notifications-outline" size={22} color={color} />
+            <Ionicons name="cart-outline" size={22} color={color} />
           )
         }}
       />
 
       <Tabs.Screen
-        name="cart"
+        name="notifications"
         options={{
           href: null // 👈 prevents this from being registered as a tab
         }}

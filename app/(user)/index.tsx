@@ -5,22 +5,25 @@ import {
   FlatList,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   Animated,
   RefreshControl,
   StatusBar,
+  ScrollView,
+  Dimensions,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useNavigation } from "expo-router";
-import { useEffect, useLayoutEffect, useState, useRef } from "react";
+import { useEffect, useLayoutEffect, useState, useRef, useMemo } from "react";
 import { useCartStore } from "../../store/useCartStore";
 import BeerCard from "@/components/BeerCard";
 import FilterTag from "@/components/FilterTag";
 import BannerCarousel from "@/components/BannerCarousel";
-import QuickActions from "@/components/QuickActions";
 import { beers, categories, Beer } from "../../data/beers";
 import { LinearGradient } from "expo-linear-gradient";
 import Toast from "react-native-toast-message";
+
+const { width: screenWidth } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
@@ -30,12 +33,17 @@ export default function HomeScreen() {
   
   const [selected, setSelected] = useState("all");
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<'name' | 'price' | 'rating'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [showFilters, setShowFilters] = useState(false);
   const router = useRouter();
   const navigation = useNavigation();
   
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerOpacity = useRef(new Animated.Value(0)).current;
   const categoryFlatListRef = useRef<FlatList>(null);
+  const filterAnimation = useRef(new Animated.Value(0)).current;
+  const searchAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const timeout = setTimeout(() => setLoading(false), 1000);
@@ -62,28 +70,6 @@ export default function HomeScreen() {
     }, 1000);
   };
 
-  const handleQuickAction = (action: string) => {
-    switch (action) {
-      case 'bestsellers':
-        setSelected('all');
-        setSearch('');
-        break;
-      case 'deals':
-        setSelected('all');
-        setSearch('');
-        break;
-      case 'new':
-        setSelected('all');
-        setSearch('');
-        break;
-      case 'craft':
-        setSelected('ipa');
-        setSearch('');
-        break;
-      default:
-        break;
-    }
-  };
 
   const handleBannerPress = (bannerId: string) => {
     Toast.show({
@@ -93,63 +79,139 @@ export default function HomeScreen() {
     });
   };
 
-  const filteredBeers = beers.filter((beer) => {
-    const matchesCategory = selected === 'all' || beer.type === selected;
-    const matchesSearch = beer.name.toLowerCase().includes(search.toLowerCase()) ||
-                         beer.brand.toLowerCase().includes(search.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filteredBeers = useMemo(() => {
+    let filtered = beers.filter((beer) => {
+      const matchesCategory = selected === 'all' || beer.type === selected;
+      const matchesSearch = beer.name.toLowerCase().includes(search.toLowerCase()) ||
+                           beer.brand.toLowerCase().includes(search.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
 
-  const featuredBeers = beers.filter(beer => beer.featured);
-  const popularBeers = beers.filter(beer => beer.popular);
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+      switch (sortBy) {
+        case 'price':
+          aValue = a.price;
+          bValue = b.price;
+          break;
+        case 'rating':
+          aValue = a.rating;
+          bValue = b.rating;
+          break;
+        default:
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+      }
+      
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    return filtered;
+  }, [selected, search, sortBy, sortOrder]);
+
+  const popularBeers = useMemo(() => beers.filter(beer => beer.popular), []);
+
+  const toggleFilters = () => {
+    setShowFilters(!showFilters);
+    Animated.timing(filterAnimation, {
+      toValue: showFilters ? 0 : 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const handleSortChange = (newSortBy: 'name' | 'price' | 'rating') => {
+    if (sortBy === newSortBy) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder('asc');
+    }
+  };
 
   const HeaderComponent = () => (
     <View>
-      {/* Header Section */}
+      {/* Fixed Header with Gradient */}
       <LinearGradient
         colors={['#FFF7ED', '#FEF3C7']}
         style={styles.headerSection}
       >
         <View style={styles.headerRow}>
           <View style={styles.greetingContainer}>
-            <Text style={styles.greeting}>Good {getGreeting()}</Text>
+            <Animated.Text style={[styles.greeting, {
+              opacity: headerOpacity.interpolate({
+                inputRange: [0, 100],
+                outputRange: [1, 0.8],
+                extrapolate: 'clamp',
+              }),
+            }]}>Good {getGreeting()}</Animated.Text>
             <Text style={styles.subGreeting}>What would you like to drink?</Text>
           </View>
           <TouchableOpacity
-            style={styles.cartIcon}
-            onPress={() => router.push("/(user)/cart")}
+            style={styles.notificationIcon}
+            onPress={() => router.push('/(user)/notifications')}
           >
-            <Ionicons name="cart-outline" size={24} color="#78350F" />
-            {cartItems.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{cartItems.length}</Text>
-              </View>
-            )}
+            <Ionicons name="notifications-outline" size={20} color="#B45309" />
           </TouchableOpacity>
         </View>
 
-        {/* Search Box */}
-        <View style={styles.searchContainer}>
+        {/* Enhanced Search Box */}
+        <Animated.View style={[styles.searchContainer, {
+          transform: [{
+            translateY: searchAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, -2],
+            })
+          }]
+        }]}>
           <Ionicons name="search-outline" size={20} color="#B45309" />
           <TextInput
-            placeholder="Search beers, brands..."
+            placeholder="Search beers, brands, or styles..."
             style={styles.searchInput}
             placeholderTextColor="#B45309"
             value={search}
-            onChangeText={setSearch}
+            onChangeText={(text) => {
+              setSearch(text);
+              // Animate search on input
+              Animated.sequence([
+                Animated.timing(searchAnimation, {
+                  toValue: 1,
+                  duration: 100,
+                  useNativeDriver: false,
+                }),
+                Animated.timing(searchAnimation, {
+                  toValue: 0,
+                  duration: 100,
+                  useNativeDriver: false,
+                })
+              ]).start();
+            }}
           />
-        </View>
+          {search.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearch('')}
+              style={styles.clearSearch}
+            >
+              <Ionicons name="close-circle" size={18} color="#B45309" />
+            </TouchableOpacity>
+          )}
+        </Animated.View>
       </LinearGradient>
 
-      {/* Banner Carousel */}
-      <BannerCarousel onBannerPress={handleBannerPress} />
+      {/* Enhanced Banner Carousel */}
+      <View style={styles.bannerSection}>
+        <BannerCarousel onBannerPress={handleBannerPress} />
+      </View>
 
-      {/* Quick Actions */}
-      <QuickActions onActionPress={handleQuickAction} />
 
-      {/* Category Filter */}
+      {/* Categories with Sticky Scroll */}
       <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>Categories</Text>
+        
         <FlatList
           ref={categoryFlatListRef}
           data={categories}
@@ -164,83 +226,94 @@ export default function HomeScreen() {
               selected={selected === item.id}
               onPress={() => {
                 setSelected(item.id);
-                // Scroll to the selected category
+                // Smooth scroll to selected category
                 const selectedIndex = categories.findIndex(cat => cat.id === item.id);
                 if (selectedIndex !== -1 && categoryFlatListRef.current) {
                   categoryFlatListRef.current.scrollToIndex({
                     index: selectedIndex,
                     animated: true,
-                    viewPosition: 0.5, // Center the item
+                    viewPosition: 0.5,
                   });
                 }
               }}
             />
           )}
           getItemLayout={(data, index) => ({
-            length: 100, // Approximate width of each FilterTag
+            length: 100,
             offset: 100 * index,
             index,
           })}
         />
       </View>
 
-      {/* Featured Section */}
-      {featuredBeers.length > 0 && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Featured</Text>
-          <FlatList
-            data={featuredBeers}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.horizontalCardContainer}>
-                <TouchableOpacity
-                  onPress={() => router.push({
-                    pathname: "/(user)/product/[id]",
-                    params: {
-                      id: item.id,
-                      name: item.name,
-                      brand: item.brand,
-                      price: item.price.toString(),
-                      type: item.type,
-                      image: item.image,
-                      description: item.description,
-                      alcohol: item.alcohol,
-                      volume: item.volume,
-                      rating: item.rating.toString(),
-                      reviews: item.reviews.toString(),
-                    }
-                  })}
-                >
-                  <BeerCard
-                    beer={item}
-                    onAdd={() => {
-                      addToCart({ ...item, quantity: 1 });
-                      Toast.show({
-                        type: 'success',
-                        text1: 'Added to cart!',
-                        text2: `${item.name} added successfully`,
-                        visibilityTime: 2000,
-                      });
-                    }}
-                  />
-                </TouchableOpacity>
-              </View>
-            )}
-          />
-        </View>
-      )}
+      {/* Sort and Filter Controls */}
+      <Animated.View style={[styles.filterControls, {
+        height: filterAnimation.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 60],
+        }),
+        opacity: filterAnimation,
+      }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.sortContainer}>
+            <TouchableOpacity
+              style={[styles.sortButton, sortBy === 'name' && styles.sortButtonActive]}
+              onPress={() => handleSortChange('name')}
+            >
+              <Text style={[styles.sortText, sortBy === 'name' && styles.sortTextActive]}>
+                Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.sortButton, sortBy === 'price' && styles.sortButtonActive]}
+              onPress={() => handleSortChange('price')}
+            >
+              <Text style={[styles.sortText, sortBy === 'price' && styles.sortTextActive]}>
+                Price {sortBy === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.sortButton, sortBy === 'rating' && styles.sortButtonActive]}
+              onPress={() => handleSortChange('rating')}
+            >
+              <Text style={[styles.sortText, sortBy === 'rating' && styles.sortTextActive]}>
+                Rating {sortBy === 'rating' && (sortOrder === 'asc' ? '↑' : '↓')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </Animated.View>
 
-      {/* Section Title for All Products */}
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>
-          {selected === 'all' ? 'All Beers' : `${categories.find(c => c.id === selected)?.name} Beers`}
-        </Text>
-        <Text style={styles.sectionSubtitle}>
-          {filteredBeers.length} {filteredBeers.length === 1 ? 'beer' : 'beers'} found
-        </Text>
+
+      {/* Results Header */}
+<View style={styles.resultsHeader}>
+        <View style={styles.resultsInfo}>
+          <Text style={styles.resultsCount}>
+            {filteredBeers.length} {filteredBeers.length === 1 ? 'beer' : 'beers'} found
+          </Text>
+          <TouchableOpacity
+            onPress={toggleFilters}
+            style={[styles.filterButton, { marginLeft: 8 }]}
+          >
+            <Ionicons 
+              name={showFilters ? "funnel" : "funnel-outline"} 
+              size={18} 
+              color={showFilters ? "#F59E0B" : "#6B7280"} 
+            />
+            <Text style={[styles.filterText, { color: showFilters ? "#F59E0B" : "#6B7280" }]}
+            >
+              Filter
+            </Text>
+          </TouchableOpacity>
+        </View>        
+        {search.length > 0 && (
+          <TouchableOpacity
+            onPress={() => setSearch('')}
+            style={styles.clearFilters}
+          >
+            <Text style={styles.clearFiltersText}>Clear search</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -277,7 +350,8 @@ export default function HomeScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.gridItemContainer}>
-            <TouchableOpacity
+            <BeerCard
+              beer={item}
               onPress={() => router.push({
                 pathname: "/(user)/product/[id]",
                 params: {
@@ -294,20 +368,16 @@ export default function HomeScreen() {
                   reviews: item.reviews.toString(),
                 }
               })}
-            >
-              <BeerCard
-                beer={item}
-                onAdd={() => {
-                  addToCart({ ...item, quantity: 1 });
-                  Toast.show({
-                    type: 'success',
-                    text1: 'Added to cart!',
-                    text2: `${item.name} added successfully`,
-                    visibilityTime: 2000,
-                  });
-                }}
-              />
-            </TouchableOpacity>
+              onAdd={() => {
+                addToCart({ ...item, quantity: 1 });
+                Toast.show({
+                  type: 'success',
+                  text1: 'Added to cart!',
+                  text2: `${item.name} added successfully`,
+                  visibilityTime: 2000,
+                });
+              }}
+            />
           </View>
         )}
         ListHeaderComponent={HeaderComponent}
@@ -444,7 +514,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   categoriesContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 1,
     gap: 12,
   },
   horizontalList: {
@@ -485,5 +555,133 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
+  },
+  
+  // Enhanced header styles
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  notificationIcon: {
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderRadius: 10,
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+  },
+  clearSearch: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  
+  // Section layout styles
+  bannerSection: {
+    marginBottom: 8,
+  },
+  quickActionsSection: {
+    marginBottom: 8,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  seeAllText: {
+    fontSize: 14,
+    color: '#F59E0B',
+    fontWeight: '600',
+  },
+  
+  // Filter controls
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+  },
+  filterText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  filterControls: {
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  sortButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  sortButtonActive: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
+  },
+  sortText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  sortTextActive: {
+    color: '#F59E0B',
+    fontWeight: '600',
+  },
+  
+  // Enhanced card containers
+  featuredCardContainer: {
+    width: 180,
+    marginRight: 12,
+  },
+  
+  // Results section
+  resultsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    paddingTop: 8,
+  },
+  resultsInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  resultsTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  resultsCount: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  clearFilters: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  clearFiltersText: {
+    fontSize: 12,
+    color: '#F59E0B',
+    fontWeight: '600',
   },
 });

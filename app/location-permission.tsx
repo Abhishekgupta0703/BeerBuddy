@@ -12,11 +12,13 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useUserStore } from '../store/useUserStore';
 
 const { width, height } = Dimensions.get('window');
 
 export default function LocationPermissionScreen() {
   const router = useRouter();
+  const { setLocationPermission } = useUserStore();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -61,14 +63,18 @@ export default function LocationPermissionScreen() {
       if (status === 'granted') {
         const location = await Location.getCurrentPositionAsync({});
         
-        // Store location in global state or async storage if needed
+        // Set location permission in store
+        setLocationPermission(true);
         router.replace('/(user)');
       } else {
         Alert.alert(
           'Location Permission Required',
           'We need your location to deliver beer to you. Please enable location access in settings.',
           [
-            { text: 'Skip for now', onPress: () => router.replace('/(user)') },
+            { text: 'Skip for now', onPress: () => {
+              setLocationPermission(false);
+              router.replace('/(user)');
+            }},
             { text: 'Try Again', onPress: requestLocationPermission },
           ]
         );
@@ -132,7 +138,10 @@ export default function LocationPermissionScreen() {
 
         <TouchableOpacity
           style={styles.skipButton}
-          onPress={() => router.replace('/(user)')}
+          onPress={() => {
+            setLocationPermission(false);
+            router.replace('/(user)');
+          }}
         >
           <Text style={styles.skipButtonText}>Skip for now</Text>
         </TouchableOpacity>

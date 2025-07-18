@@ -2,11 +2,13 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useUserStore } from '../store/useUserStore';
 
 const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { setWelcomeSeen } = useUserStore();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
   const slideAnim = useRef(new Animated.Value(height)).current;
@@ -37,13 +39,14 @@ export default function WelcomeScreen() {
       }),
     ]).start();
 
-    // Navigate to main app after animation
+    // Navigate to login after animation and set welcome seen
     const timer = setTimeout(() => {
-      router.replace('/');
+      setWelcomeSeen(true);
+      router.replace('/login');
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [router]);
+  }, [router, setWelcomeSeen]);
 
   return (
     <LinearGradient

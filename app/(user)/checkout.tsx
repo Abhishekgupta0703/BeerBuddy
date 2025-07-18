@@ -3,11 +3,17 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  Alert,
+  KeyboardAvoidingView,
+  Platform
 } from "react-native";
 import { useCartStore } from "../../store/useCartStore";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
+import { useState } from "react";
 
 export default function CheckoutScreen() {
   const cartItems = useCartStore((state) => state.items);

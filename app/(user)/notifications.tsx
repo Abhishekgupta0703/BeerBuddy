@@ -1,4 +1,5 @@
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Animated } from 'react-native';
+import { useEffect, useRef } from 'react';
 
 const notifications = [
   {
@@ -25,15 +26,25 @@ const notifications = [
 ];
 
 export default function NotificationsScreen() {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <Text style={styles.title}>Notifications</Text>
       <FlatList
         data={notifications}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ gap: 14 }}
+        contentContainerStyle={styles.listContainer}
         renderItem={({ item }) => (
-          <View
+          <Animated.View
             style={[
               styles.card,
               item.type === 'success'
@@ -46,10 +57,10 @@ export default function NotificationsScreen() {
             <Text style={styles.bold}>{item.title}</Text>
             <Text style={styles.desc}>{item.desc}</Text>
             <Text style={styles.time}>{item.time}</Text>
-          </View>
+          </Animated.View>
         )}
       />
-    </View>
+    </Animated.View>
   );
 }
 const styles = StyleSheet.create({
@@ -80,5 +91,8 @@ const styles = StyleSheet.create({
   time: {
     color: '#6b7280',
     fontSize: 12,
+  },
+  listContainer: {
+    gap: 14,
   },
 });

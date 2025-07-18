@@ -15,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useUserStore } from "../store/useUserStore";
 
 const { width, height } = Dimensions.get('window');
 
@@ -78,17 +79,50 @@ export default function LoginScreen() {
   const handleVerifyOTP = async () => {
     if (otp === "1234") {
       setLoading(true);
-      await AsyncStorage.setItem("token", "dummy_token");
-      Toast.show({ type: "success", text1: "Logged in successfully" });
       
-      setTimeout(() => {
+      try {
+        // Set authentication token
+        await AsyncStorage.setItem("token", "dummy_token");
+        
+        // Set user data based on phone number
         const isExistingUser = phone === "9999999999";
-        if (isExistingUser) {
-          router.replace("/location-permission");
-        } else {
-          router.replace("/age-verification");
-        }
-      }, 1000);
+        const userData = isExistingUser 
+          ? {
+              name: "John Doe",
+              email: "john.doe@example.com",
+              phone: phone,
+              avatar: ""
+            }
+          : {
+              name: "New User",
+              email: "newuser@example.com",
+              phone: phone,
+              avatar: ""
+            };
+        
+        // Save user data to AsyncStorage
+        await AsyncStorage.setItem("userData", JSON.stringify(userData));
+        
+        // Update user store with authentication
+        const { setUser, setAuthenticated } = useUserStore.getState();
+        setUser(userData);
+        setAuthenticated(true);
+        
+        Toast.show({ type: "success", text1: "Logged in successfully" });
+        
+        setTimeout(() => {
+          if (isExistingUser) {
+            router.replace("/location-permission");
+          } else {
+            router.replace("/age-verification");
+          }
+        }, 1000);
+      } catch (error) {
+        console.error('Login error:', error);
+        Toast.show({ type: "error", text1: "Login failed", text2: "Please try again" });
+      } finally {
+        setLoading(false);
+      }
     } else {
       Toast.show({ type: "error", text1: "Invalid OTP" });
     }

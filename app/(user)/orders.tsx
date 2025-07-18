@@ -1,4 +1,5 @@
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 
 const orders = [
   {
@@ -7,6 +8,13 @@ const orders = [
     status: 'Delivered',
     price: 748,
     items: 3,
+  },
+  {
+    id: 'BD12346',
+    date: '2024-01-18',
+    status: 'Ordered',
+    price: 1299,
+    items: 5,
   },
   {
     id: 'BD12344',
@@ -25,6 +33,23 @@ const orders = [
 ];
 
 export default function OrdersScreen() {
+  const router = useRouter();
+
+  const handleViewDetails = (orderId: string) => {
+    // Navigate to order details page
+    router.push(`/order-details/${orderId}`);
+  };
+
+  const handleReorder = (orderId: string) => {
+    // Navigate to reorder page or add items to cart
+    router.push(`/reorder/${orderId}`);
+  };
+
+  const handleTrackOrder = (orderId: string) => {
+    // Navigate to tracking page
+    router.push(`/tracking/${orderId}`);
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Order History</Text>
@@ -57,12 +82,26 @@ export default function OrdersScreen() {
             </Text>
             <Text style={styles.price}>₹{item.price}</Text>
             <View style={styles.row}>
-              <TouchableOpacity style={styles.outlineBtn}>
+              <TouchableOpacity 
+                style={styles.outlineBtn}
+                onPress={() => handleViewDetails(item.id)}
+              >
                 <Text style={styles.outlineText}>View Details</Text>
               </TouchableOpacity>
               {item.status === 'Delivered' && (
-                <TouchableOpacity style={styles.reorderBtn}>
+                <TouchableOpacity 
+                  style={styles.reorderBtn}
+                  onPress={() => handleReorder(item.id)}
+                >
                   <Text style={styles.reorderText}>Reorder</Text>
+                </TouchableOpacity>
+              )}
+              {item.status === 'Ordered' && (
+                <TouchableOpacity 
+                  style={styles.trackBtn}
+                  onPress={() => handleTrackOrder(item.id)}
+                >
+                  <Text style={styles.trackText}>Track Order</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -145,6 +184,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   reorderText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  trackBtn: {
+    flex: 1,
+    backgroundColor: '#3b82f6',
+    padding: 7,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  trackText: {
     color: '#fff',
     fontWeight: '600',
   },
