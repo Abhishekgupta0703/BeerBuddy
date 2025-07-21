@@ -39,9 +39,9 @@ export default function WelcomeScreen() {
       }),
     ]).start();
 
-    // Navigate to login after animation and set welcome seen
+    // Navigate to login after animation (welcome screen shown every time)
     const timer = setTimeout(() => {
-      setWelcomeSeen(true);
+      // Don't set welcome seen - we want to show welcome screen every time
       router.replace('/login');
     }, 3000);
 

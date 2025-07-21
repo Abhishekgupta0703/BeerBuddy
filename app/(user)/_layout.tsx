@@ -1,11 +1,13 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import AuthGuard from "@/components/AuthGuard";
 export const unstable_settings = {
   initialRouteName: "index"
 };
 export default function UserLayout() {
   return (
-    <Tabs
+    <AuthGuard>
+      <Tabs
       initialRouteName="index"
       screenOptions={{
         tabBarActiveTintColor: "#f59e0b",
@@ -93,5 +95,6 @@ export default function UserLayout() {
         }}
       />
     </Tabs>
+    </AuthGuard>
   );
 }

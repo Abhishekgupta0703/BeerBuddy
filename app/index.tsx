@@ -18,20 +18,24 @@ export default function Index() {
         // Get the current auth state after loading
         const currentAuthState = useUserStore.getState().authState;
         
-        // Determine next screen based on auth state
-        if (!currentAuthState.hasSeenWelcome) {
+        // ALWAYS show welcome screen first (regardless of hasSeenWelcome)
+        // This ensures welcome screen appears on every app reload
+        if (!currentAuthState.isAuthenticated) {
+          // User is not authenticated - show welcome screen
           router.replace('/welcome');
-        } else if (!currentAuthState.isAuthenticated) {
-          router.replace('/login');
         } else if (!currentAuthState.isAgeVerified) {
+          // User is authenticated but not age verified
           router.replace('/age-verification');
         } else if (!currentAuthState.hasLocationPermission) {
+          // User is authenticated and age verified but no location permission
           router.replace('/location-permission');
         } else {
+          // User is fully authenticated - can access home
           router.replace('/(user)');
         }
       } catch (error) {
         console.error('Error checking auth status:', error);
+        // On error, always redirect to welcome screen
         router.replace('/welcome');
       } finally {
         setLoading(false);

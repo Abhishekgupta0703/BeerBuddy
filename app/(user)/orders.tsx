@@ -1,5 +1,7 @@
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import Toast from 'react-native-toast-message';
+import { useCartStore } from '../../store/useCartStore';
 
 const orders = [
   {
@@ -34,20 +36,30 @@ const orders = [
 
 export default function OrdersScreen() {
   const router = useRouter();
+  const addToCart = useCartStore((state) => state.addToCart);
+  const storeOrders = useCartStore((state) => state.orders);
 
   const handleViewDetails = (orderId: string) => {
-    // Navigate to order details page
-    router.push(`/order-details/${orderId}`);
+    if (!orderId) return; // Ensure orderId is valid
+    Toast.show({ type: 'info', text1: 'Order Details', text2: `Viewing order ${orderId}` });
+    // router.push(`/order-details/${orderId}`);
   };
 
   const handleReorder = (orderId: string) => {
-    // Navigate to reorder page or add items to cart
-    router.push(`/reorder/${orderId}`);
+    if (!orderId) return; // Ensure orderId is valid
+    const order = storeOrders.find(o => o.id === orderId);
+    if(order) {
+      order.items.forEach(item => addToCart(item));
+      Toast.show({ type: 'success', text1: 'Items added to cart' });
+      router.push('/(user)/cart');
+    } else {
+      Toast.show({ type: 'info', text1: 'Reorder', text2: `Adding items from order ${orderId} to cart` });
+    }
   };
 
   const handleTrackOrder = (orderId: string) => {
-    // Navigate to tracking page
-    router.push(`/tracking/${orderId}`);
+    if (!orderId) return; // Ensure orderId is valid
+    router.push('/(user)/tracking');
   };
 
   return (

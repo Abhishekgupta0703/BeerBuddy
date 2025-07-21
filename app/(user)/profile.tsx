@@ -93,8 +93,8 @@ export default function ProfileScreen() {
                 text2: "See you next time!"
               });
               
-              // Navigate back to main flow
-              router.replace("/");
+              // Navigate back to welcome screen
+              router.replace("/welcome");
             } catch (error) {
               Toast.show({
                 type: "error",

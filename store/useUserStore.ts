@@ -122,7 +122,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
                     isAuthenticated: false,
                     isAgeVerified: false,
                     hasLocationPermission: false,
-                    hasSeenWelcome: true, // Keep welcome seen as true
+                    hasSeenWelcome: false, // Reset welcome seen so user sees welcome screen again
                 },
             });
         } catch (error) {

@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCartStore } from "../../store/useCartStore";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
+import React from "react";
 
 export default function CartScreen() {
   const cartItems = useCartStore((state) => state.items);
